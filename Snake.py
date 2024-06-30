@@ -31,20 +31,19 @@ window.resizable(False,False)
 window.geometry(f"{WIN_W}x{WIN_H}+{400}+{0}")
 window_width=window.winfo_width()
 window_height=window.winfo_height()
+img=PhotoImage(file="im.png")
 # photo=PhotoImage(file="serpant.jpg")
 def start():
-    global canvasP
+    global canvasP,img
     canvasP.destroy()
-    canvasP=CTkCanvas(window,bg="grey",width=WIN_W,height=WIN_H,borderwidth=0,highlightthickness=0)
-    canvasP.pack()
-    # img=PhotoImage(file="serpant.png")
-    titre=CTkLabel(canvasP,text="SNAKE GAME",bg_color="brown",font=("Times",20,"bold")).place(x=130,y=50)
-    # canvasP.create_image(30,30,image=img)
+    canvasP=CTkCanvas(window,bg="white",width=WIN_W,height=WIN_H,borderwidth=0,highlightthickness=0)
+    canvasP.pack() 
     CTkButton(canvasP,text="jouer",hover_color="lime green",command=play).place(x=130,y=200)
     CTkButton(canvasP,text="Mode",hover_color="lime green",command=Niveau).place(x=130,y=250)
     CTkButton(canvasP,text="best score",hover_color="lime green",command=best).place(x=130,y=300)
     quiter=CTkButton(canvasP,text="Quiter",hover_color="red",bg_color="red",corner_radius=20,command=window.destroy)
     quiter.place(x=130,y=350)
+    canvasP.create_image(200,70,image=img)
 
 
 def Niveau():
@@ -94,21 +93,24 @@ def best():
 
 canvasP=CTkCanvas(window,bg="grey",width=WIN_W,height=WIN_H,borderwidth=0,highlightthickness=0)
 canvasP.pack()
-
+compte=1
 snake=Tile(0,0)
 snake_body=[Tile(TILE*-3,0),Tile(TILE*-2,0),Tile(TILE*-1,0)]
 food=Tile(random.randint(0,COLS-1)*TILE,random.randint(0,ROWS-1)*TILE)
 velocityY=0
 velocityX=1
 start()
+canvas=CTkCanvas(window,bg="black",width=WIN_W,height=WIN_H,borderwidth=0,highlightthickness=0)
 def jouers():
-
+    global compte,canvas
     canvas=CTkCanvas(window,bg="black",width=WIN_W,height=WIN_H,borderwidth=0,highlightthickness=0)
     canvas.pack()
     window.update()
     window.geometry(f"{WIN_W}x{WIN_H}+{400}+{0}")
     window_width=window.winfo_width()
-    window_height=window.winfo_height()     
+    window_height=window.winfo_height()  
+    compte=compte+2
+       
     def change_direction(e):
         global velocityX,velocityY,snake_body
         
@@ -129,7 +131,7 @@ def jouers():
             velocityY=0
 
     def move():
-        global snake,food,tile,game_over,snake_body,score
+        global snake,food,tile,game_over,snake_body,score,canvas
         if(not canvas):
             jouers()
         if(game_over):
@@ -147,8 +149,8 @@ def jouers():
                 score+=1
         if(snake.x==food.x and snake.y==food.y):
             snake_body.append(Tile(food.x,food.y))
-            food.x=random.randint(0,COLS-1)*TILE
-            food.y=random.randint(0,ROWS-1)*TILE
+            food.x=random.randint(0,COLS)*TILE
+            food.y=random.randint(0,ROWS)*TILE
             score+=1
 
         for i in range(len(snake_body)-1,-1,-1):
@@ -163,21 +165,17 @@ def jouers():
 
         snake.x+=velocityX*TILE
         snake.y+=velocityY*TILE
-        time.sleep(0.0001)
+        
     
     def draw():
-        global snake,food,snake_body,score,speed,best_score,j
-        if(jouer):
+        global snake,food,snake_body,score,speed,best_score,j,compte,canvas
+        if(compte>2 and jouer):
             move()
-            try:
-                canvas.delete("all")
-                canvas.create_rectangle(snake.x,snake.y,snake.x+TILE,snake.y+TILE,fill="lime green")
-                canvas.create_rectangle(food.x,food.y,food.x+TILE,food.y+TILE,fill="red",outline="yellow")
-            except:
-                pass
+            canvas.delete("all")
+            canvas.create_rectangle(snake.x,snake.y,snake.x+TILE,snake.y+TILE,fill="lime green")
+            canvas.create_rectangle(food.x,food.y,food.x+TILE,food.y+TILE,fill="red",outline="yellow")
             for tile in snake_body:
                 canvas.create_rectangle(tile.x,tile.y,tile.x+TILE,tile.y+TILE,fill="green")
-
             if(game_over):
                 if(score>best_score[j]):
                     best_score[j]=score
@@ -189,34 +187,40 @@ def jouers():
                 ressayer.place(x=130,y=250)
                 quiter=CTkButton(canvas2,text="Quiter",command=lambda:exit())
                 quiter.place(x=130,y=300)
-                def again():
-                    global score,snake,food,snake_body,score,velocityX,velocityY,game_over
-                    game_over=False
-                    score=0
-                    snake=Tile(0,0)
-                    snake_body=[Tile(TILE*-3,0),Tile(TILE*-2,0),Tile(TILE*-1,0)]
-                    food=Tile(random.randint(0,COLS-1)*TILE,random.randint(0,ROWS-1)*TILE)
-                    velocityY=0
-                    velocityX=1
-                    canvas.destroy()
-                    canvas2.destroy()
-                    jouers()
-                def exit():
-                    global jouer,game_over,velocityX,velocityY,snake_body,snake,food,tile,game_over,score
-                    jouer=False
-                    game_over=False
-                    score=0
-                    snake=Tile(TILE*3,0)
-                    snake_body=[Tile(0,0),Tile(TILE,0),Tile(TILE*2,0)]
-                    food=Tile(random.randint(0,COLS-1)*TILE,random.randint(0,ROWS-1)*TILE)
-                    velocityY=0
-                    velocityX=1
-                    canvas.destroy()
-                    canvas2.destroy()
-                    start()
+
 
             else:
                 canvas.create_text(30,window_height-TILE,text=f"SCORE:{score}",fill="white",font=("",10,"bold"))
+        
+            def again():
+                global score,snake,food,snake_body,score,velocityX,velocityY,game_over,compte,canvas
+                game_over=False
+                score=0
+                snake=Tile(0,0)
+                snake_body=[Tile(TILE*-3,0),Tile(TILE*-2,0),Tile(TILE*-1,0)]
+                food=Tile(random.randint(0,COLS-1)*TILE,random.randint(0,ROWS-1)*TILE)
+                velocityY=0
+                velocityX=1
+                canvas.destroy()
+                canvas2.destroy()
+                compte=1
+                jouers()
+            def exit():
+                global jouer,game_over,velocityX,velocityY,snake_body,snake,food,tile,game_over,score,compte,canvas
+                jouer=False
+                game_over=False
+                score=0
+                snake=Tile(TILE*3,0)
+                snake_body=[Tile(0,0),Tile(TILE,0),Tile(TILE*2,0)]
+                food=Tile(random.randint(0,COLS-1)*TILE,random.randint(0,ROWS-1)*TILE)
+                velocityY=0
+                velocityX=1
+                canvas.destroy()
+                canvas2.destroy()
+                compte=1
+                start()  
+        
+            
         window.after(speed,draw)
         
     draw()
