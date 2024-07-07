@@ -1,229 +1,236 @@
-from tkinter import *
 from customtkinter import *
 import random
-import time
-import sys
-import sqlite3
-class Tile:
-    def __init__(self,x,y):
-        self.x=x
-        self.y=y
+from tkinter import PhotoImage
 
-
-j=1
-num=20
-connection=sqlite3
-ROWS,COLS,TILE=num,num,15
-WIN_W=num*ROWS
-WIN_H=num*COLS
-game_over=False
-score=0
-jouer=False
-vitesses=[290,190,100]
-speed=vitesses[1]
-texte="normale"
-best_score=[50,40,30]
-
-window=CTk()
-window.title("snake")
-
-window.resizable(False,False)
-window.geometry(f"{WIN_W}x{WIN_H}+{400}+{0}")
-window_width=window.winfo_width()
-window_height=window.winfo_height()
-img=PhotoImage(file="im.png")
-# photo=PhotoImage(file="serpant.jpg")
-def start():
-    global canvasP,img
-    canvasP.destroy()
-    canvasP=CTkCanvas(window,bg="white",width=WIN_W,height=WIN_H,borderwidth=0,highlightthickness=0)
-    canvasP.pack() 
-    CTkButton(canvasP,text="jouer",hover_color="lime green",command=play).place(x=130,y=200)
-    CTkButton(canvasP,text="Mode",hover_color="lime green",command=Niveau).place(x=130,y=250)
-    CTkButton(canvasP,text="best score",hover_color="lime green",command=best).place(x=130,y=300)
-    quiter=CTkButton(canvasP,text="Quiter",hover_color="red",bg_color="red",corner_radius=20,command=window.destroy)
-    quiter.place(x=130,y=350)
-    canvasP.create_image(200,70,image=img)
-
-
-def Niveau():
-    global canvasP,speed,vitesses,texte,j
-    def vitesse(sped):
-        global speed
-        speed=sped
-        Niveau()
-
-    if speed==vitesses[0]:
-        texte="facile"
-        j=0
-    elif(speed==vitesses[1]):
-        texte="normale"
-        j=1
-    elif(speed==vitesses[2]):
-        texte="difficile"
-        j=2
-    
-    canvasP.destroy()
-    canvasP=CTkCanvas(window,bg="grey",width=WIN_W,height=WIN_H,borderwidth=0,highlightthickness=0)
-    canvasP.pack()
-    canvasP.create_text(WIN_W/2,WIN_H/8,text=f"Mode {texte}")
-    CTkButton(canvasP,text="facile",hover_color="yellow",command=lambda:vitesse(vitesses[0])).place(x=130,y=100)
-    CTkButton(canvasP,text="normal",hover_color="green",command=lambda:vitesse(vitesses[1])).place(x=130,y=150)
-    CTkButton(canvasP,text="difficile",hover_color="red",command=lambda:vitesse(vitesses[2])).place(x=130,y=200)
-    CTkButton(canvasP,text="retourner",hover_color="red",bg_color="red",corner_radius=20,command=start).place(x=130,y=350)
-
+taille=10
+global id
+Open=open("score.txt","r")
+best_score=Open.readlines()
+i=int(best_score[3])
+Open.close()
+class Snake:
+    def __init__(self):
+        self.touch=False
+        self.x=30
+        self.y=30
+        self.body=[[20,30],[10,30],[0,30]]
+        self.score=0
+        self.not_game_over=True
+        self.directionY=0
+        self.directionX=1  
+        self.vitesse=[300,200,100]
+        self.niveau=["Facile","Normal","Difficile"]
+class menu:
+    def __init__(self,width,height):
+        self.width=width
+        self.height=height
+        self.fenetre=CTk()
+        self.fenetre.title("Snake Game")
+        self.logo=PhotoImage(file="im.png")
+        self.icon=PhotoImage(file="icon.png")
+        self.fenetre.iconphoto(True,self.icon)
+        self.fenetre.geometry(f"{self.width}x{self.height}+{self.width+100}+{self.height/4}")
+        self.fenetre.resizable(False,False)
+    def canvasP(self,back):
+        self.canvas=CTkCanvas(self.fenetre,background=back,width=self.width,height=self.height,highlightthickness=0)
+        self.canvas.pack()   
+    def start(self): 
+        self.canvasP("#999")
+        #self.canvas.create_text(self.width/2,self.height/6,fill="green",text="Snake Game",font=("Noteworthy",40,"bold"))
+        self.canvas.create_image(self.width/2,self.height/5, image=self.logo)
+        self.button=CTkButton(self.canvas,text="Jouer",command=init,width=200)
+        self.button.place(x=self.width/4,y=self.height/2)
+        self.button=CTkButton(self.canvas,text="Niveau",command=self.level,width=200)
+        self.button.place(x=self.width/4,y=self.height/2+50)
+        self.button=CTkButton(self.canvas,text="Best score",command=self.best,width=200)
+        self.button.place(x=self.width/4,y=self.height/2+100)
+        self.button=CTkButton(self.canvas,text="Quitter",bg_color="red",command=self.fenetre.destroy)
+        self.button.place(x=self.width/3,y=self.height/2+150)
+    def over(self):#affichage du game over
+        global snake
+        if(int(best_score[i])==snake.score):
+            self.canvas.create_text(self.width/2,self.height/5,fill="#942",text=f"felicitation new best",font=("Trattatello",30,"italic"))
+        else:
+            self.canvas.create_text(self.width/6,self.height//15,fill="white",text=f"Best score:{best_score[i]}",font=("Trattatello",15,"bold"))
+        self.canvas.create_text(self.width/1.2,self.height//14,fill="#362",text=f"{snake.niveau[i].upper()}",font=("arial",15,"italic"))
+        self.canvas.create_text(self.width/2,self.height/3,fill="red",text="Game Over",font=("arial",40,"bold"))
+        self.canvas.create_text(self.width/2,self.height//2,fill="#282",text=f"Score:{snake.score}",font=("arial",20,"italic"))
+        self.button=CTkButton(self.canvas,text="Reesseyer",command=rejouer,width=200) 
+        self.button.place(x=self.width/4,y=self.height/2+50)
+        self.button=CTkButton(self.canvas,text="Quitter",command=self.fenetre.destroy)
+        self.button.place(x=50,y=self.height/2+150)
+        self.button=CTkButton(self.canvas,text="Menu",command=menus)
+        self.button.place(x=200,y=self.height/2+150)
+    def best(self):
+        global best_score,Open
+        Open=open("score.txt","r")
+        best_score=Open.readlines()
+        self.canvas.destroy()
+        self.canvasP("#499")
+        self.button=CTkLabel(self.canvas,text=f"Facile    =>{best_score[0]}",font=("arial",20,"bold"),bg_color="yellow",width=150)
+        self.button.place(x=self.width/8,y=self.height/10)
+        self.button=CTkLabel(self.canvas,text=f"Moyen   =>{best_score[1]}",font=("arial",20,"bold"),bg_color="green",width=150)
+        self.button.place(x=self.width/8,y=self.height/10+50)
+        self.button=CTkLabel(self.canvas,text=f"Difficile =>{best_score[2]}",font=("arial",20,"bold"),bg_color="red",width=150)
+        self.button.place(x=self.width/8,y=self.height/10+100)
+        self.button=CTkButton(self.canvas,text="reset",width=50,command=lambda:reset_score(0))
+        self.button.place(x=self.width-100,y=self.height/10)
+        self.button=CTkButton(self.canvas,text="reset",width=50,command=lambda:reset_score(1))
+        self.button.place(x=self.width-100,y=self.height/10+50)
+        self.button=CTkButton(self.canvas,text="reset",width=50,command=lambda:reset_score(2))
+        self.button.place(x=self.width-100,y=self.height/10+100)
+        self.button=CTkButton(self.canvas,text="Reset All",command=reset_score_all)
+        self.button.place(x=self.width/3,y=self.height/2+100)
+        self.button=CTkButton(self.canvas,text="Quitter",command=self.fenetre.destroy)
+        self.button.place(x=50,y=self.height/2+150)
+        self.button=CTkButton(self.canvas,text="Back",command=menus)
+        self.button.place(x=200,y=self.height/2+150)
+        Open.close()
+    def level(self):
+        global snake
+        self.canvas.destroy()
+        self.canvasP("#499")
+        self.texte=CTkLabel(self.canvas,text=f"Niveau Actuel:{snake.niveau[i]}",width=200,height=35,font=("Courier New",20,"bold"))
+        self.texte.place(x=self.width/4.5,y=self.height/10) 
+        self.button=CTkButton(self.canvas,text="Facile",command=lambda:change_level(0),width=200,height=35)
+        self.button.place(x=self.width/4,y=self.height/2.5)
+        self.button=CTkButton(self.canvas,text="Moyen",command=lambda:change_level(1),width=200,height=35)
+        self.button.place(x=self.width/4,y=self.height/2.5+50)
+        self.button=CTkButton(self.canvas,text="Difficile",command=lambda:change_level(2),width=200,height=35)
+        self.button.place(x=self.width/4,y=self.height/2.5+100)
+        self.button=CTkButton(self.canvas,text="Quitter",command=self.fenetre.destroy)
+        self.button.place(x=50,y=self.height/2+150)
+        self.button=CTkButton(self.canvas,text="Back",command=menus)
+        self.button.place(x=200,y=self.height/2+150)
+def change_level(nombre):
+    global jeu,i
+    Open=open("score.txt","w")
+    Open.write(f"{int(best_score[0])}\n{int(best_score[1])}\n{int(best_score[2])}\n{int(nombre)}")
+    Open.close()
+    i=nombre
+    jeu.texte.configure(text=f"Niveau Actuel:{snake.niveau[nombre]}")
+def change_best():
+    global snake,i,Open,best_score
+    if(snake.score>int(best_score[i])):
+        best_score[i]=snake.score
+        Open=open("score.txt","w")
+        Open.write(f"{int(best_score[0])}\n{int(best_score[1])}\n{int(best_score[2])}\n{int(best_score[3])}")
+        Open.close()
+def reset_score_all():
+    global Open,jeu,best_score
+    Open=open("score.txt","w")
+    Open.write(f"0\n0\n0\n{best_score[3]}")
+    Open.close()
+    jeu.best()
+def reset_score(nombre):
+    global Open,jeu
+    best_score[nombre]=0
+    Open=open("score.txt","w")
+    Open.write(f"{int(best_score[0])}\n{int(best_score[1])}\n{int(best_score[2])}\n{int(i)}")
+    Open.close()
+    jeu.best()       
+def reset():
+    global jeu,snake
+    jeu.canvas.delete("all")
+    snake.not_game_over=True
+    snake.score=0
+    snake.directionX=1
+    snake.directionY=0
+    snake.body=[[20,30],[10,30],[0,30]]
+    snake.x=30
+    snake.y=30
+def menus():
+    global jeu
+    reset()
+    jeu.fenetre.after_cancel(id)
+    jeu.canvas.destroy()
+    jeu.start()
+def rejouer():
+    global snake,jeu,id
+    reset()
+    jeu.canvas.destroy()
+    jeu.fenetre.after_cancel(id)
+    jeu.start()
+    init()   
+def init():
+    global jeu,snake
+    snake.touch=True
+    jeu.canvas.destroy()
+    jeu.canvasP("#000")
+    pomme()
+    play()
+def pomme():
+    global xPomme,yPomme,id
+    xPomme=(random.randrange((jeu.width//10)))*10
+    yPomme=(random.randrange((jeu.height//10)))*10
 def play():
-    global jouer,canvasP
-    jouer=True
-    canvasP.destroy()
-    jouers()
-    return
+    global jeu,snake,id,score_affichage
+    collision()
+    if(snake.not_game_over):
+        if(snake.x==30 and snake.y==30 and snake.score==0) :
+            score_affichage=CTkLabel(jeu.canvas,text=f"score:{snake.score}")
+            score_affichage.place(x=10,y=jeu.height-30)
+        manger()   
+        dessiner()
+    id=jeu.fenetre.after(snake.vitesse[i],play)
+def collision():
+    global snake,jeu,id
+    if(snake.x<0 or snake.x>=jeu.width or snake.y<0 or snake.y>=jeu.height ):
+        jeu.canvas.destroy()
+        snake.not_game_over=False
+        jeu.canvasP("#012")
+        snake.touch=False
+        jeu.over()  
+    for tile in snake.body:
+        if(tile[0]==snake.x and tile[1]==snake.y):
+            jeu.canvas.destroy()
+            snake.not_game_over=False
+            jeu.canvasP("#012")
+            jeu.over()            
+def dessiner():
+    global jeu,snake,taille
+    for i in range(len(snake.body)-1,-1,-1):
+        queue=snake.body[i]
+        if(i==0):
+            queue[0]=snake.x
+            queue[1]=snake.y
 
-def best():
-    global canvasP
-    canvasP.destroy()
-    canvasP=CTkCanvas(window,bg="grey",width=WIN_W,height=WIN_H,borderwidth=0,highlightthickness=0)
-    canvasP.pack()
-    CTkLabel(canvasP,text=f"facile :{best_score[0]}",text_color="yellow",font=("Times",18,"bold")).place(x=110,y=100)
-    CTkLabel(canvasP,text=f"Normale :{best_score[1]}",text_color="green",font=("Times",18,"bold")).place(x=110,y=150)
-    CTkLabel(canvasP,text=f"Difficile :{best_score[2]}",text_color="red",font=("Times",18,"bold")).place(x=110,y=200)
-    CTkButton(canvasP,text="retourner",hover_color="red",bg_color="red",corner_radius=20,command=start).place(x=130,y=350)
-    return
-
-
-canvasP=CTkCanvas(window,bg="grey",width=WIN_W,height=WIN_H,borderwidth=0,highlightthickness=0)
-canvasP.pack()
-compte=1
-snake=Tile(0,0)
-snake_body=[Tile(TILE*-3,0),Tile(TILE*-2,0),Tile(TILE*-1,0)]
-food=Tile(random.randint(0,COLS-1)*TILE,random.randint(0,ROWS-1)*TILE)
-velocityY=0
-velocityX=1
-start()
-canvas=CTkCanvas(window,bg="black",width=WIN_W,height=WIN_H,borderwidth=0,highlightthickness=0)
-def jouers():
-    global compte,canvas
-    canvas=CTkCanvas(window,bg="black",width=WIN_W,height=WIN_H,borderwidth=0,highlightthickness=0)
-    canvas.pack()
-    window.update()
-    window.geometry(f"{WIN_W}x{WIN_H}+{400}+{0}")
-    window_width=window.winfo_width()
-    window_height=window.winfo_height()  
-    compte=compte+2
-       
-    def change_direction(e):
-        global velocityX,velocityY,snake_body
-        
-        if(e.keysym=="Up" and velocityY!=1 ):
-            velocityX=0
-            velocityY=-1
-        elif(e.keysym=="Down" and velocityY!=-1):
-            velocityX=0
-            velocityY=1
-        elif(e.keysym=="Left" and velocityX!=1):
-            velocityX=-1
-            velocityY=0
-        elif(e.keysym=="Right" and velocityX!=-1):
-            velocityX=1
-            velocityY=0
-        elif(e.keysym=="space"):
-            velocityX=0
-            velocityY=0
-
-    def move():
-        global snake,food,tile,game_over,snake_body,score,canvas
-        if(not canvas):
-            jouers()
-        if(game_over):
-            return
-        
-        if(snake.x<0 or snake.x>=window_width or snake.y<0 or snake.y>=window_height):
-            game_over=True
-            return
-
-        for tile in snake_body:
-            if(snake.x==tile.x and snake.y==tile.y):
-                game_over=True
-                return 
-            elif(food.x==tile.x and food.y==tile.y):
-                score+=1
-        if(snake.x==food.x and snake.y==food.y):
-            snake_body.append(Tile(food.x,food.y))
-            food.x=random.randint(0,COLS)*TILE
-            food.y=random.randint(0,ROWS)*TILE
-            score+=1
-
-        for i in range(len(snake_body)-1,-1,-1):
-            tile=snake_body[i]
-            if(i==0):
-                tile.x=snake.x
-                tile.y=snake.y
-            else:
-                prev_tile=snake_body[i-1]
-                tile.x=prev_tile.x
-                tile.y=prev_tile.y
-
-        snake.x+=velocityX*TILE
-        snake.y+=velocityY*TILE
-        
-    
-    def draw():
-        global snake,food,snake_body,score,speed,best_score,j,compte,canvas
-        if(compte>2 and jouer):
-            move()
-            canvas.delete("all")
-            canvas.create_rectangle(snake.x,snake.y,snake.x+TILE,snake.y+TILE,fill="lime green")
-            canvas.create_rectangle(food.x,food.y,food.x+TILE,food.y+TILE,fill="red",outline="yellow")
-            for tile in snake_body:
-                canvas.create_rectangle(tile.x,tile.y,tile.x+TILE,tile.y+TILE,fill="green")
-            if(game_over):
-                if(score>best_score[j]):
-                    best_score[j]=score
-                canvas2=CTkCanvas(canvas,bg="black",width=WIN_W,height=WIN_H,borderwidth=0,highlightthickness=0)
-                canvas2.place(x=0,y=0)
-                canvas2.create_text(window_width/2,window_height/4,text=f"GAME OVER ",font=("",25,"bold"),fill="red")
-                canvas2.create_text(window_width/2,window_height/4+30,text=f"SCORE :{score}",font=("",25,"italic"),fill="red")
-                ressayer=CTkButton(canvas2,text="Ressayer",hover_color="lime green",command=lambda:again())
-                ressayer.place(x=130,y=250)
-                quiter=CTkButton(canvas2,text="Quiter",command=lambda:exit())
-                quiter.place(x=130,y=300)
-
-
-            else:
-                canvas.create_text(30,window_height-TILE,text=f"SCORE:{score}",fill="white",font=("",10,"bold"))
-        
-            def again():
-                global score,snake,food,snake_body,score,velocityX,velocityY,game_over,compte,canvas
-                game_over=False
-                score=0
-                snake=Tile(0,0)
-                snake_body=[Tile(TILE*-3,0),Tile(TILE*-2,0),Tile(TILE*-1,0)]
-                food=Tile(random.randint(0,COLS-1)*TILE,random.randint(0,ROWS-1)*TILE)
-                velocityY=0
-                velocityX=1
-                canvas.destroy()
-                canvas2.destroy()
-                compte=1
-                jouers()
-            def exit():
-                global jouer,game_over,velocityX,velocityY,snake_body,snake,food,tile,game_over,score,compte,canvas
-                jouer=False
-                game_over=False
-                score=0
-                snake=Tile(TILE*3,0)
-                snake_body=[Tile(0,0),Tile(TILE,0),Tile(TILE*2,0)]
-                food=Tile(random.randint(0,COLS-1)*TILE,random.randint(0,ROWS-1)*TILE)
-                velocityY=0
-                velocityX=1
-                canvas.destroy()
-                canvas2.destroy()
-                compte=1
-                start()  
-        
-            
-        window.after(speed,draw)
-        
-    draw()
-
-    window.bind("<KeyRelease>",change_direction)
-window.mainloop()
+        else:
+            prev_tile=snake.body[i-1]
+            queue[0]=prev_tile[0]
+            queue[1]=prev_tile[1]
+    snake.x+=snake.directionX*taille
+    snake.y+=snake.directionY*taille
+    jeu.canvas.delete("all")
+    jeu.canvas.create_rectangle(snake.x,snake.y,snake.x+taille,snake.y+taille,fill="#282")
+    for queue in snake.body:
+        jeu.canvas.create_rectangle(queue[0],queue[1],queue[0]+taille,queue[1]+taille,fill="yellow")
+    jeu.canvas.create_rectangle(xPomme,yPomme,xPomme+taille,yPomme+taille,fill="red")
+def manger():
+    global jeu,snake,xPomme,yPomme,score_affichage
+    if(xPomme==snake.x and yPomme==snake.y):
+        snake.body.append([xPomme,yPomme])
+        snake.score+=1
+        score_affichage.configure(text=f"score:{snake.score}")
+        change_best()
+        pomme()
+def changer(e):
+    global snake
+    if(snake.touch):
+        if(e.keysym=="Up" and snake.directionY!=1):
+            snake.directionX=0
+            snake.directionY=-1
+        elif(e.keysym=="Down" and snake.directionY!=-1):
+            snake.directionX=0
+            snake.directionY=1
+        elif(e.keysym=="Left" and snake.directionX!=1):
+            snake.directionX=-1
+            snake.directionY=0
+        elif(e.keysym=="Right" and snake.directionX!=-1):
+            snake.directionX=1
+            snake.directionY=0    
+jeu=menu(400,500)
+snake=Snake()
+jeu.start()
+jeu.fenetre.bind("<KeyRelease>",changer)
+jeu.fenetre.mainloop()
